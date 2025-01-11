@@ -1,0 +1,89 @@
+#+title: content-quoter.el: Quote buffer and file contents
+#+author: Paul Nelson
+
+* Overview
+
+=content-quoter= is an Emacs package that helps you quote content from buffers and files in various formats (markdown, org-mode, or XML).  It is useful when you want to pass such content along to some tool.  I'm using it to help work with LLM's that I can access only via a web browser.
+
+* Installation
+
+Install =content-quoter= by downloading the source and using =M-x package-install-file=.
+
+* Usage
+
+The package provides four main commands:
+
+1. =M-x content-quoter-visible-buffers-to-clipboard= - Quote all visible buffers
+2. =M-x content-quoter-git-files-to-clipboard= - Quote git-tracked files (with optional wildcard)
+3. =M-x content-quoter-project-files-to-clipboard= - Quote project files (with optional wildcard)
+4. =M-x content-quoter-from-history-to-clipboard= - Reuse previously quoted content
+
+By default, content is wrapped in markdown code blocks.  It can alternatively be wrapped in org or xml blocks, or however you'd like -- see the customization variable =content-quoter-wrapper=.
+
+* Example
+Suppose you have three visible buffers =a.txt=, =b.txt= and =c.txt= with the contents "A", "B" and "C", respectively.  Then =M-x content-quoter-visible-buffers-to-clipboard= copies one of the following to the clipboard, depending upon the value of the customization variable =content-quoter-wrapper=:
+
+- =(setopt content-quoter-wrapper #'content-quoter-wrap-markdown)= (default setting)
+#+begin_example
+## Buffer: a.txt
+```text
+A
+```
+
+## Buffer: b.txt
+```text
+B
+```
+
+## Buffer: c.txt
+```text
+C
+```
+#+end_example
+
+- =(setopt content-quoter-wrapper #'content-quoter-wrap-org)=
+#+begin_example
+- Buffer: a.txt
+#+begin_src text
+A
+#+end_src
+
+- Buffer: b.txt
+#+begin_src text
+B
+#+end_src
+
+- Buffer: c.txt
+#+begin_src text
+C
+#+end_src
+#+end_example
+
+- =(setopt content-quoter-wrapper #'content-quoter-wrap-xml)=
+#+begin_example
+<document>
+  <source type="buffer">a.txt</source>
+  <language>text</language>
+  <document_content>
+A
+  </document_content>
+</document>
+
+<document>
+  <source type="buffer">b.txt</source>
+  <language>text</language>
+  <document_content>
+B
+  </document_content>
+</document>
+
+<document>
+  <source type="buffer">c.txt</source>
+  <language>text</language>
+  <document_content>
+C
+  </document_content>
+</document>
+#+end_example
+(compare this last example with https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/long-context-tips#example-multi-document-structure)
+
