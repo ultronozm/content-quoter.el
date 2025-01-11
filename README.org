@@ -42,22 +42,22 @@ C
 #+end_example
 
 - =(setopt content-quoter-wrapper #'content-quoter-wrap-org)=
-#+begin_example
+#+begin_src org
 - Buffer: a.txt
-#+begin_src text
+,#+begin_src text
 A
-#+end_src
+,#+end_src
 
 - Buffer: b.txt
-#+begin_src text
+,#+begin_src text
 B
-#+end_src
+,#+end_src
 
 - Buffer: c.txt
-#+begin_src text
+,#+begin_src text
 C
+,#+end_src
 #+end_src
-#+end_example
 
 - =(setopt content-quoter-wrapper #'content-quoter-wrap-xml)=
 #+begin_example
