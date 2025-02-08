@@ -358,5 +358,23 @@ Optional WILDCARD (e.g., \"*.el\") filters files by pattern."
       (kill-new content)
       (message "Copied content from historical source set"))))
 
+;;;###autoload
+(defun content-quoter-selected-buffers-to-clipboard ()
+  "Quote content of selected buffers and copy to clipboard.
+Uses `completing-read-multiple' to select buffers from all available buffers."
+  (interactive)
+  (let* ((selected-buffers
+          (mapcar #'get-buffer
+                  (completing-read-multiple
+                   "Select buffers to quote: "
+                   (mapcar #'buffer-name (buffer-list))
+                   nil t)))
+         (content-plists (mapcar #'content-quoter--get-buffer-content selected-buffers))
+         (content (content-quoter--combine-sources
+                   (mapcar content-quoter-wrapper content-plists))))
+    (content-quoter-add-to-history content-plists)
+    (kill-new content)
+    (message "Copied content from %d selected buffer(s)" (length selected-buffers))))
+
 (provide 'content-quoter)
 ;;; content-quoter.el ends here
