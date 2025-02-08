@@ -271,6 +271,35 @@ SOURCES can be buffer objects, buffer names, or file paths."
              (nreverse (delq nil content-plists))))))
 
 ;;;###autoload
+(defun content-quoter-directory-files-to-clipboard (dir &optional wildcard recursive)
+  "Quote content of files from DIR and copy to clipboard.
+Optional WILDCARD (e.g., \"*.py\") filters files by pattern.
+With prefix arg RECURSIVE, include subdirectories recursively."
+  (interactive
+   (list (read-directory-name "Select directory: ")
+         (read-string "File wildcard (optional, e.g., *.py): " nil nil "*.*")
+         current-prefix-arg))
+  (let* ((regexp (if (or (null wildcard) (string= wildcard "*.*"))
+                     ".*"
+                   (wildcard-to-regexp wildcard)))
+         (files (if recursive
+                    (directory-files-recursively dir regexp recursive)
+                  (mapcar (lambda (f) (expand-file-name f dir))
+                          (directory-files dir nil regexp))))
+         (content-plists (mapcar #'content-quoter--get-file-content files))
+         (content (content-quoter--combine-sources
+                   (mapcar content-quoter-wrapper content-plists))))
+    (content-quoter-add-to-history content-plists)
+    (kill-new content)
+    (message "Copied content from %d file(s) in directory %s%s%s"
+             (length files)
+             dir
+             (if (string= wildcard "*.*")
+                 ""
+               (format " matching %s" wildcard))
+             (if recursive " (including subdirectories)" ""))))
+
+;;;###autoload
 (defun content-quoter-visible-buffers-to-clipboard ()
   "Quote content of all visible buffers and copy to clipboard."
   (interactive)
