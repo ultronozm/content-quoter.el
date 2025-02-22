@@ -1,5 +1,5 @@
 #+title: content-quoter.el: Quote buffer and file contents
-#+author: Paul Nelson
+#+author: Paul D. Nelson
 
 * Overview
 

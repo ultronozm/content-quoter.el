@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2025  Paul Nelson
 
-;; Author: Paul Nelson <ultrono@gmail.com>
+;; Author: Paul D. Nelson <ultrono@gmail.com>
 ;; Version: 0.1
 ;; URL: https://github.com/ultronozm/doc-dual-view.el
 ;; Package-Requires: ((emacs "27.1"))
@@ -285,7 +285,10 @@ With prefix arg RECURSIVE, include subdirectories recursively."
          (files (if recursive
                     (directory-files-recursively dir regexp recursive)
                   (mapcar (lambda (f) (expand-file-name f dir))
-                          (directory-files dir nil regexp))))
+                          (seq-filter (lambda (f)
+                                        (and (not (member f '("." "..")))
+                                             (not (file-directory-p (expand-file-name f dir)))))
+                                      (directory-files dir nil regexp)))))
          (content-plists (mapcar #'content-quoter--get-file-content files))
          (content (content-quoter--combine-sources
                    (mapcar content-quoter-wrapper content-plists))))
