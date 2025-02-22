@@ -303,6 +303,17 @@ With prefix arg RECURSIVE, include subdirectories recursively."
              (if recursive " (including subdirectories)" ""))))
 
 ;;;###autoload
+(defun content-quoter-current-buffer-to-clipboard ()
+  "Quote content of the current buffer and copy to clipboard."
+  (interactive)
+  (let* ((content-plist (content-quoter--get-buffer-content (current-buffer)))
+         (content (content-quoter--combine-sources
+                   (list (funcall content-quoter-wrapper content-plist)))))
+    (content-quoter-add-to-history (list content-plist))
+    (kill-new content)
+    (message "Copied quoted content from current buffer")))
+
+;;;###autoload
 (defun content-quoter-visible-buffers-to-clipboard ()
   "Quote content of all visible buffers and copy to clipboard."
   (interactive)
