@@ -3,27 +3,83 @@
 
 * Overview
 
-=content-quoter= is an Emacs package that helps you quote content from buffers and files in various formats (markdown, org-mode, or XML).  It is useful when you want to pass such content along to some tool.  I'm using it to help work with LLM's that I can access only via a web browser.
+=content-quoter= is an Emacs package that helps you quote content from buffers
+and files in various formats (e.g., Markdown, Org, or XML). This is especially
+useful when you need to paste code or text into a tool (like an LLM interface) that
+works best when content is presented in a structured way.
 
 * Installation
 
-Install =content-quoter= by downloading the source and using =M-x package-install-file=.
+Install =content-quoter= by downloading the source file ~content-quoter.el~ and
+running ~M-x package-install-file~.
+
+* Quick Start (DWIM)
+
+A convenient entry point is the command ~M-x content-quoter-dwim~, which *tries to
+Do What I Mean* based on the current context:
+
+1. If you supply a prefix argument (e.g., ~C-u M-x content-quoter-dwim~), it
+   will quote *all visible buffers*.
+2. If there is an active region, it narrows to that region and quotes only that
+   portion of the current buffer.
+3. Otherwise, it quotes the entire current buffer.
+
+By default, the quoted text goes to your clipboard, and the content is wrapped
+in Markdown code blocks (though this can be changed to Org or XML—see below).
 
 * Usage
 
-The package provides four main commands:
+Beyond the *dwim* command, the package offers more fine-tuned commands:
 
-1. =M-x content-quoter-visible-buffers-to-clipboard= - Quote all visible buffers
-2. =M-x content-quoter-git-files-to-clipboard= - Quote git-tracked files (with optional wildcard)
-3. =M-x content-quoter-project-files-to-clipboard= - Quote project files (with optional wildcard)
-4. =M-x content-quoter-from-history-to-clipboard= - Reuse previously quoted content
+1. ~M-x content-quoter-current-buffer-to-clipboard~
+   - Quote the current buffer.
 
-By default, content is wrapped in markdown code blocks.  It can alternatively be wrapped in org or xml blocks, or however you'd like -- see the customization variable =content-quoter-wrapper=.
+2. ~M-x content-quoter-visible-buffers-to-clipboard~
+   - Quote all buffers currently visible in Emacs windows.
+
+3. ~M-x content-quoter-git-files-to-clipboard~
+   - Quote the contents of Git-tracked files in the current repository; allows
+     optional wildcard matching (e.g., =*.el=).
+
+4. ~M-x content-quoter-project-files-to-clipboard~
+   - Quote files in the current project.  Also supports wildcard matching.
+
+5. ~M-x content-quoter-directory-files-to-clipboard~
+   - Quote files from a chosen directory (with optional wildcard filtering).  A
+     prefix argument can make it recursive.
+
+6. ~M-x content-quoter-from-history-to-clipboard~
+   - Reuse previously quoted content.  This is helpful when you want to
+     re-copy the same set of buffers or files you quoted earlier.
+
+7. ~M-x content-quoter-selected-buffers-to-clipboard~
+   - Interactively select multiple buffers and quote them.
+
+All of these commands place the final quoted text in the clipboard (kill ring),
+and also store an entry in the internal =content-quoter= history so that you can
+recall them later with =content-quoter-from-history-to-clipboard=.
+
+* Customization
+
+By default, the quoted text is wrapped in Markdown code blocks. However, you
+can customize the variable ~content-quoter-wrapper~ to use Org blocks
+(~content-quoter-wrap-org~) or XML tags (~content-quoter-wrap-xml~).  For
+example:
+
+#+BEGIN_SRC emacs-lisp
+;; In your Emacs config:
+(setopt content-quoter-wrapper #'content-quoter-wrap-org)
+#+END_SRC
+
+Now the quoted content will be wrapped in Org ~src~ blocks instead of Markdown.
 
 * Example
-Suppose you have three visible buffers =a.txt=, =b.txt= and =c.txt= with the contents "A", "B" and "C", respectively.  Then =M-x content-quoter-visible-buffers-to-clipboard= copies one of the following to the clipboard, depending upon the value of the customization variable =content-quoter-wrapper=:
 
-- =(setopt content-quoter-wrapper #'content-quoter-wrap-markdown)= (default setting)
+Suppose you have three visible buffers ~a.txt~, ~b.txt~, and ~c.txt~, containing
+the texts "A", "B", and "C", respectively.  Using
+~M-x content-quoter-visible-buffers-to-clipboard~ with the default Markdown
+wrapper produces something like:
+
 #+begin_example
 ## Buffer: a.txt
 ```text
@@ -41,7 +97,8 @@ C
 ```
 #+end_example
 
-- =(setopt content-quoter-wrapper #'content-quoter-wrap-org)=
+With Org wrapping (content-quoter-wrap-org), you might see:
+
 #+begin_src org
 - Buffer: a.txt
 ,#+begin_src text
@@ -59,7 +116,8 @@ C
 ,#+end_src
 #+end_src
 
-- =(setopt content-quoter-wrapper #'content-quoter-wrap-xml)=
+With XML wrapping (content-quoter-wrap-xml):
+
 #+begin_example
 <document>
   <source type="buffer">a.txt</source>
@@ -85,5 +143,5 @@ C
   </document_content>
 </document>
 #+end_example
-(compare this last example with https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/long-context-tips#example-multi-document-structure)
 
+(compare this last example with https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/long-context-tips#example-multi-document-structure)

@@ -390,5 +390,19 @@ Uses `completing-read-multiple' to select buffers from all available buffers."
     (kill-new content)
     (message "Copied content from %d selected buffer(s)" (length selected-buffers))))
 
+;;;###autoload
+(defun content-quoter-dwim (&optional arg)
+  "Do-what-I-mean for content quoting.
+With prefix ARG, quote visible buffers.
+With active region, quote only the region.
+Otherwise, quote the current buffer."
+  (interactive "P")
+  (cond (arg (content-quoter-visible-buffers-to-clipboard))
+        ((use-region-p)
+         (save-restriction
+           (narrow-to-region (region-beginning) (region-end))
+           (content-quoter-current-buffer-to-clipboard)))
+        (t (content-quoter-current-buffer-to-clipboard))))
+
 (provide 'content-quoter)
 ;;; content-quoter.el ends here
