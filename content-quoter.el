@@ -404,5 +404,21 @@ Otherwise, quote the current buffer."
            (content-quoter-current-buffer-to-clipboard)))
         (t (content-quoter-current-buffer-to-clipboard))))
 
+;;;###autoload
+(defun content-quoter-dired-marked-files-to-clipboard ()
+  "Quote content of marked files in dired and copy to clipboard.
+If no files are marked, use the current file at point."
+  (interactive)
+  (unless (eq major-mode 'dired-mode)
+    (user-error "This command can only be used in dired-mode"))
+
+  (let* ((files (dired-get-marked-files))
+         (content-plists (mapcar #'content-quoter--get-file-content files))
+         (content (content-quoter--combine-sources
+                   (mapcar content-quoter-wrapper content-plists))))
+    (content-quoter-add-to-history content-plists)
+    (kill-new content)
+    (message "Copied content from %d marked file(s)" (length files))))
+
 (provide 'content-quoter)
 ;;; content-quoter.el ends here
