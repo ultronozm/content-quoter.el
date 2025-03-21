@@ -250,7 +250,7 @@ Returns absolute file paths."
       matching-files)))
 
 (defun content-quoter-quote-sources (sources)
-  "Convert SOURCES to quoted format.
+  "Convert SOURCES to quoted format and return as a string.
 SOURCES can be buffer objects, buffer names, or file paths."
   (let (content-plists)
     (dolist (source sources)
@@ -266,9 +266,27 @@ SOURCES can be buffer objects, buffer names, or file paths."
          (message "Warning: Source %s not found" source)
          nil))
        content-plists))
-    (content-quoter--combine-sources
-     (mapcar content-quoter-wrapper
-             (nreverse (delq nil content-plists))))))
+    (let ((plists (nreverse (delq nil content-plists))))
+      (when plists
+        (content-quoter-add-to-history plists))
+      (content-quoter--combine-sources
+       (mapcar content-quoter-wrapper plists)))))
+
+(defun content-quoter-directory-files (dir &optional wildcard recursive)
+  "Quote content of files from DIR and return as a string.
+Optional WILDCARD (e.g., \"*.py\") filters files by pattern.
+With RECURSIVE non-nil, include subdirectories recursively."
+  (let* ((regexp (if (or (null wildcard) (string= wildcard "*.*"))
+                     ".*"
+                   (wildcard-to-regexp wildcard)))
+         (files (if recursive
+                    (directory-files-recursively dir regexp recursive)
+                  (mapcar (lambda (f) (expand-file-name f dir))
+                          (seq-filter (lambda (f)
+                                        (and (not (member f '("." "..")))
+                                             (not (file-directory-p (expand-file-name f dir)))))
+                                      (directory-files dir nil regexp))))))
+    (content-quoter-quote-sources files)))
 
 ;;;###autoload
 (defun content-quoter-directory-files-to-clipboard (dir &optional wildcard recursive)
@@ -279,51 +297,46 @@ With prefix arg RECURSIVE, include subdirectories recursively."
    (list (read-directory-name "Select directory: ")
          (read-string "File wildcard (optional, e.g., *.py): " nil nil "*.*")
          current-prefix-arg))
-  (let* ((regexp (if (or (null wildcard) (string= wildcard "*.*"))
-                     ".*"
-                   (wildcard-to-regexp wildcard)))
-         (files (if recursive
-                    (directory-files-recursively dir regexp recursive)
-                  (mapcar (lambda (f) (expand-file-name f dir))
-                          (seq-filter (lambda (f)
-                                        (and (not (member f '("." "..")))
-                                             (not (file-directory-p (expand-file-name f dir)))))
-                                      (directory-files dir nil regexp)))))
-         (content-plists (mapcar #'content-quoter--get-file-content files))
-         (content (content-quoter--combine-sources
-                   (mapcar content-quoter-wrapper content-plists))))
-    (content-quoter-add-to-history content-plists)
+  (let* ((content (content-quoter-directory-files dir wildcard recursive))
+         (files-count (length (split-string content "^##\\|^\\*\\|^<document>" t))))
     (kill-new content)
     (message "Copied content from %d file(s) in directory %s%s%s"
-             (length files)
+             files-count
              dir
              (if (string= wildcard "*.*")
                  ""
                (format " matching %s" wildcard))
              (if recursive " (including subdirectories)" ""))))
 
+(defun content-quoter-current-buffer ()
+  "Quote content of the current buffer and return as a string."
+  (content-quoter-quote-sources (list (current-buffer))))
+
 ;;;###autoload
 (defun content-quoter-current-buffer-to-clipboard ()
   "Quote content of the current buffer and copy to clipboard."
   (interactive)
-  (let* ((content-plist (content-quoter--get-buffer-content (current-buffer)))
-         (content (content-quoter--combine-sources
-                   (list (funcall content-quoter-wrapper content-plist)))))
-    (content-quoter-add-to-history (list content-plist))
+  (let ((content (content-quoter-current-buffer)))
     (kill-new content)
     (message "Copied quoted content from current buffer")))
+
+(defun content-quoter-visible-buffers ()
+  "Quote content of all visible buffers and return as a string."
+  (content-quoter-quote-sources (content-quoter--collect-visible-buffers)))
 
 ;;;###autoload
 (defun content-quoter-visible-buffers-to-clipboard ()
   "Quote content of all visible buffers and copy to clipboard."
   (interactive)
-  (let* ((buffers (content-quoter--collect-visible-buffers))
-         (content-plists (mapcar #'content-quoter--get-buffer-content buffers))
-         (content (content-quoter--combine-sources
-                   (mapcar content-quoter-wrapper content-plists))))
-    (content-quoter-add-to-history content-plists)
+  (let* ((content (content-quoter-visible-buffers))
+         (buffers-count (length (split-string content "^##\\|^\\*\\|^<document>" t))))
     (kill-new content)
-    (message "Copied content from %d visible buffer(s)" (length buffers))))
+    (message "Copied content from %d visible buffer(s)" buffers-count)))
+
+(defun content-quoter-git-files (&optional wildcard)
+  "Quote content of git-tracked files and return as a string.
+Optional WILDCARD (e.g., \"*.el\") filters files by pattern."
+  (content-quoter-quote-sources (content-quoter--collect-git-files wildcard)))
 
 ;;;###autoload
 (defun content-quoter-git-files-to-clipboard (&optional wildcard)
@@ -331,17 +344,19 @@ With prefix arg RECURSIVE, include subdirectories recursively."
 Optional WILDCARD (e.g., \"*.el\") filters files by pattern."
   (interactive
    (list (read-string "File wildcard (default: *.*): " nil nil "*.*")))
-  (let* ((files (content-quoter--collect-git-files wildcard))
-         (content-plists (mapcar #'content-quoter--get-file-content files))
-         (content (content-quoter--combine-sources
-                   (mapcar content-quoter-wrapper content-plists))))
-    (content-quoter-add-to-history content-plists)
+  (let* ((content (content-quoter-git-files wildcard))
+         (files-count (length (split-string content "^##\\|^\\*\\|^<document>" t))))
     (kill-new content)
     (message "Copied content from %d git-tracked file(s)%s"
-             (length files)
+             files-count
              (if (string= wildcard "*.*")
                  ""
                (format " matching %s" wildcard)))))
+
+(defun content-quoter-project-files (&optional wildcard)
+  "Quote content of project files and return as a string.
+Optional WILDCARD (e.g., \"*.el\") filters files by pattern."
+  (content-quoter-quote-sources (content-quoter--collect-project-files wildcard)))
 
 ;;;###autoload
 (defun content-quoter-project-files-to-clipboard (&optional wildcard)
@@ -349,46 +364,62 @@ Optional WILDCARD (e.g., \"*.el\") filters files by pattern."
 Optional WILDCARD (e.g., \"*.el\") filters files by pattern."
   (interactive
    (list (read-string "File wildcard (default: *.*): " nil nil "*.*")))
-  (let* ((files (content-quoter--collect-project-files wildcard))
-         (content-plists (mapcar #'content-quoter--get-file-content files))
-         (content (content-quoter--combine-sources
-                   (mapcar content-quoter-wrapper content-plists))))
-    (content-quoter-add-to-history content-plists)
+  (let* ((content (content-quoter-project-files wildcard))
+         (files-count (length (split-string content "^##\\|^\\*\\|^<document>" t))))
     (kill-new content)
     (message "Copied content from %d project file(s)%s"
-             (length files)
+             files-count
              (if (string= wildcard "*.*")
                  ""
                (format " matching %s" wildcard)))))
 
-;;;###autoload
-(defun content-quoter-from-history-to-clipboard ()
-  "Quote content from a previously used set of sources."
-  (interactive)
+(defun content-quoter-from-history ()
+  "Quote content from a previously used set of sources and return as a string."
   (if (null content-quoter-history)
       (user-error "No content quoter history available")
-    (let* ((sources (content-quoter-select-from-history))
-           (content (content-quoter-quote-sources sources)))
-      (kill-new content)
-      (message "Copied content from historical source set"))))
+    (let ((sources (content-quoter-select-from-history)))
+      (content-quoter-quote-sources sources))))
+
+;;;###autoload
+(defun content-quoter-from-history-to-clipboard ()
+  "Quote content from a previously used set of sources and copy to clipboard."
+  (interactive)
+  (let ((content (content-quoter-from-history)))
+    (kill-new content)
+    (message "Copied content from historical source set")))
+
+(defun content-quoter-selected-buffers ()
+  "Quote content of selected buffers and return as a string.
+Uses `completing-read-multiple' to select buffers from all available buffers."
+  (let ((selected-buffers
+         (mapcar #'get-buffer
+                 (completing-read-multiple
+                  "Select buffers to quote: "
+                  (mapcar #'buffer-name (buffer-list))
+                  nil t))))
+    (content-quoter-quote-sources selected-buffers)))
 
 ;;;###autoload
 (defun content-quoter-selected-buffers-to-clipboard ()
   "Quote content of selected buffers and copy to clipboard.
 Uses `completing-read-multiple' to select buffers from all available buffers."
   (interactive)
-  (let* ((selected-buffers
-          (mapcar #'get-buffer
-                  (completing-read-multiple
-                   "Select buffers to quote: "
-                   (mapcar #'buffer-name (buffer-list))
-                   nil t)))
-         (content-plists (mapcar #'content-quoter--get-buffer-content selected-buffers))
-         (content (content-quoter--combine-sources
-                   (mapcar content-quoter-wrapper content-plists))))
-    (content-quoter-add-to-history content-plists)
+  (let* ((content (content-quoter-selected-buffers))
+         (buffers-count (length (split-string content "^##\\|^\\*\\|^<document>" t))))
     (kill-new content)
-    (message "Copied content from %d selected buffer(s)" (length selected-buffers))))
+    (message "Copied content from %d selected buffer(s)" buffers-count)))
+
+(defun content-quoter-dwim-string (&optional arg)
+  "Do-what-I-mean for content quoting, returning a string.
+With prefix ARG, quote visible buffers.
+With active region, quote only the region.
+Otherwise, quote the current buffer."
+  (cond (arg (content-quoter-visible-buffers))
+        ((use-region-p)
+         (save-restriction
+           (narrow-to-region (region-beginning) (region-end))
+           (content-quoter-current-buffer)))
+        (t (content-quoter-current-buffer))))
 
 ;;;###autoload
 (defun content-quoter-dwim (&optional arg)
@@ -397,28 +428,26 @@ With prefix ARG, quote visible buffers.
 With active region, quote only the region.
 Otherwise, quote the current buffer."
   (interactive "P")
-  (cond (arg (content-quoter-visible-buffers-to-clipboard))
-        ((use-region-p)
-         (save-restriction
-           (narrow-to-region (region-beginning) (region-end))
-           (content-quoter-current-buffer-to-clipboard)))
-        (t (content-quoter-current-buffer-to-clipboard))))
+  (let ((content (content-quoter-dwim-string arg)))
+    (kill-new content)
+    (message "Copied quoted content via DWIM")))
+
+(defun content-quoter-dired-marked-files ()
+  "Quote content of marked files in dired and return as a string.
+If no files are marked, use the current file at point."
+  (unless (eq major-mode 'dired-mode)
+    (user-error "This command can only be used in dired-mode"))
+  (content-quoter-quote-sources (dired-get-marked-files)))
 
 ;;;###autoload
 (defun content-quoter-dired-marked-files-to-clipboard ()
   "Quote content of marked files in dired and copy to clipboard.
 If no files are marked, use the current file at point."
   (interactive)
-  (unless (eq major-mode 'dired-mode)
-    (user-error "This command can only be used in dired-mode"))
-
-  (let* ((files (dired-get-marked-files))
-         (content-plists (mapcar #'content-quoter--get-file-content files))
-         (content (content-quoter--combine-sources
-                   (mapcar content-quoter-wrapper content-plists))))
-    (content-quoter-add-to-history content-plists)
+  (let* ((content (content-quoter-dired-marked-files))
+         (files-count (length (split-string content "^##\\|^\\*\\|^<document>" t))))
     (kill-new content)
-    (message "Copied content from %d marked file(s)" (length files))))
+    (message "Copied content from %d marked file(s)" files-count)))
 
 (provide 'content-quoter)
 ;;; content-quoter.el ends here
