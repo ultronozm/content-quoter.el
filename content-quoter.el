@@ -3,7 +3,7 @@
 ;; Copyright (C) 2025  Paul Nelson
 
 ;; Author: Paul D. Nelson <ultrono@gmail.com>
-;; Version: 0.1
+;; Version: 0.2
 ;; URL: https://github.com/ultronozm/doc-dual-view.el
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: convenience, tools
