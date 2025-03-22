@@ -4,7 +4,7 @@
 
 ;; Author: Paul D. Nelson <ultrono@gmail.com>
 ;; Version: 0.2
-;; URL: https://github.com/ultronozm/doc-dual-view.el
+;; URL: https://github.com/ultronozm/content-quoter.el
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: convenience, tools
 
