@@ -146,8 +146,7 @@ Includes timestamp and abbreviated source names."
 (defun content-quoter--move-to-history-top (description)
   "Move the history entry with DESCRIPTION to the top of the history."
   (let ((entry (assoc description
-                      (mapcar (lambda (e)
-                                (cons (plist-get e :description) e))
+                      (mapcar (lambda (e) (cons (plist-get e :description) e))
                               content-quoter-history))))
     (when entry
       (setq content-quoter-history
