@@ -25,16 +25,19 @@
 
 ;; This package provides tools for quoting content from buffers and
 ;; files in various formats (e.g., markdown code blocks, org-mode
-;; source blocks).  I'm using it to help work with LLM's that I can
-;; access only via a web browser.
+;; source blocks).  It's useful for preparing content for external
+;; tools accessed via web browsers.
 ;;
 ;; Main features:
-;; - Quote content from visible buffers
-;; - Quote content from git-tracked files
-;; - Quote content from project files
-;; - Reuse previously quoted content via history
+;; - DWIM command for common quoting tasks
+;; - Quote content from current buffer, visible buffers, selected buffers
+;; - Quote content from git-tracked files, project files, directory files
+;; - Quote content from marked files in Dired
+;; - Apply formatting (Markdown, Org, XML, custom)
+;; - Reuse previously quoted content sets via history
 ;;
 ;; Basic usage:
+;;   M-x content-quoter-dwim
 ;;   M-x content-quoter-visible-buffers-to-clipboard
 ;;   M-x content-quoter-git-files-to-clipboard
 ;;   M-x content-quoter-project-files-to-clipboard
@@ -43,6 +46,16 @@
 ;;; Code:
 
 (require 'project)
+(require 'dired)
+
+;;; Core Data Structure & Formatting Wrappers
+
+;; The core internal data structure is a LIST of PLISTS.
+;; Each PLIST represents a single source (buffer or file) and has the keys:
+;; :content (string) - The actual text content.
+;; :language (string) - The language identifier (e.g., "emacs-lisp").
+;; :type (symbol) - The type of source, e.g., 'buffer, 'file, 'region.
+;; :name (string) - The name of the source (buffer name, filename, etc.).
 
 (defun content-quoter-wrap-markdown (content-plist)
   "Wrap CONTENT-PLIST in a markdown code block."
