@@ -425,6 +425,7 @@ If no files marked, quote file at point."
 (defun content-quoter-dwim (&optional arg)
   "Do-what-I-mean for content quoting and copy to clipboard.
 With prefix ARG, quote visible buffers.
+In `dired-mode' with marked files, quote those files.
 With active region, quote only the region.
 Otherwise, quote the current buffer."
   (interactive "P")
@@ -438,6 +439,11 @@ Otherwise, quote the current buffer."
                                (current-buffer)
                                (region-beginning) (region-end)))
                  source-description "region (DWIM)"))
+          ((and (eq major-mode 'dired-mode)
+                (dired-get-marked-files nil nil nil t))
+           (let ((files (content-quoter--collect-dired-marked-files)))
+             (setq plists (content-quoter--get-content-plists files)
+                   source-description "dired marked files (DWIM)")))          
           (t
            (setq plists (list (content-quoter--get-buffer-content-plist
                                (current-buffer)))
