@@ -22,7 +22,8 @@ Do What I Mean* based on the current context:
    will quote *all visible buffers*.
 2. If there is an active region, it narrows to that region and quotes only that
    portion of the current buffer.
-3. Otherwise, it quotes the entire current buffer.
+3. If you're in ~dired-mode~ with marked files, it quotes those files.
+4. Otherwise, it quotes the entire current buffer.
 
 By default, the quoted text goes to your clipboard, and the content is wrapped
 in Markdown code blocks (though this can be changed to Org or XML—see below).
