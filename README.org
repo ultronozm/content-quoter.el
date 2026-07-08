@@ -10,8 +10,9 @@ works best when content is presented in a structured way.
 
 * Installation
 
-Install =content-quoter= by downloading the source file ~content-quoter.el~ and
-running ~M-x package-install-file~.
+Install =content-quoter= from this repository with your preferred package
+manager, or download =content-quoter.el= and run
+~M-x package-install-file~.
 
 * Quick Start (DWIM)
 
